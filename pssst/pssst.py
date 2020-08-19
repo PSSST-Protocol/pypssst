@@ -30,10 +30,10 @@ def _DKF_SHA384(shared_secret): # pylint: disable=invalid-name
 def generate_key_pair(cipher_suite=CipherSuite.X25519_AESGCM128):
     """A utility function to generate a suitable key pair for the given cipher suite
 
-    :param cipher_suite: cipher suite for which to generate asymmetric key pair, defaults to X25519_AESGCM128
+    :param cipher_suite: cipher suite for which to generate asymmetric key pair
 
     :raises PSSSTUnsupportedCipher: requested cipher suite is not supported.
-    
+
     :return: (private_key, public_key) tuple
     """
     if cipher_suite != CipherSuite.X25519_AESGCM128:
@@ -48,9 +48,9 @@ class PSSSTClient:
 
     :param server_public_key: Public key of the target server
     :param client_private_key: Private key for client authentication, defaults to None
-    :param cipher_suite: cipher suite for which to generate asymmetric key pair, defaults to X25519_AESGCM128
+    :param cipher_suite: cipher suite for which to generate asymmetric key pair
 
-    :raises PSSSTUnsupportedCipher: requested cipher suite is not supported.    
+    :raises PSSSTUnsupportedCipher: requested cipher suite is not supported.
     """
     # pylint: disable=too-few-public-methods
     def __init__(self, server_public_key,
@@ -81,7 +81,7 @@ class PSSSTClient:
 
     def pack_request(self, data):
         """Pack an outbound request
-        
+
         :param data: message bytes to be encrypted
         :type data: bytes
 
@@ -131,7 +131,7 @@ class PSSSTServer:
     """PSSST server interface
 
     :param server_private_key: Private key for the server
-    :param cipher_suite: cipher suite for which to generate asymmetric key pair, defaults to X25519_AESGCM128
+    :param cipher_suite: cipher suite for which to generate asymmetric key pair
 
     :raises PSSSTUnsupportedCipher: requested cipher suite is not supported.
     """

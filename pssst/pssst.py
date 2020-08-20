@@ -18,8 +18,9 @@ from .errors import (
     PSSSTDecryptFailed
     )
 
-def _DKF_SHA384(shared_secret): # pylint: disable=invalid-name
+def _DKF_SHA384(dh_param, shared_secret): # pylint: disable=invalid-name
     h384 = hashes.Hash(hashes.SHA384(), default_backend())
+    h384.update(dh_param)
     h384.update(shared_secret)
     derived_bytes = h384.finalize()
     key = derived_bytes[:16]
@@ -102,7 +103,7 @@ class PSSSTClient:
                                                                   format=PublicFormat.Raw)
             shared_secret = temp_priv_key.exchange(self._server_public)
 
-        key, nonce_client, nonce_server = _DKF_SHA384(shared_secret)
+        key, nonce_client, nonce_server = _DKF_SHA384(exchange_dh, shared_secret)
 
         packet = self._request_hdr.packet_bytes + exchange_dh
         cipher = AESGCM(key)
@@ -161,10 +162,11 @@ class PSSSTServer:
             raise PSSSTNotRequest()
         if hdr.cipher_suite != self._suite:
             raise PSSSTUnsupportedCipher()
-        exchange_dh = X25519PublicKey.from_public_bytes(packet[4:36])
+        dh_bytes = packet[4:36]
+        exchange_dh = X25519PublicKey.from_public_bytes(dh_bytes)
         shared_secret = self._server_private.exchange(exchange_dh)
 
-        key, nonce_client, nonce_server = _DKF_SHA384(shared_secret)
+        key, nonce_client, nonce_server = _DKF_SHA384(dh_bytes, shared_secret)
 
         cipher = AESGCM(key)
 

@@ -27,6 +27,8 @@ release = pssst.__version__
 # The short X.Y version
 version = ".".join(release.split(".")[:2])
 
+# The master document is called 'index.rst' but ReadTheDocs doesn't find this
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 

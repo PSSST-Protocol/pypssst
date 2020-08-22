@@ -24,8 +24,8 @@ def _DKF_SHA384(dh_param, shared_secret): # pylint: disable=invalid-name
     h384.update(shared_secret)
     derived_bytes = h384.finalize()
     key = derived_bytes[:16]
-    iv_c = derived_bytes[16:32]
-    iv_s = derived_bytes[32:]
+    iv_c = derived_bytes[16:28]
+    iv_s = derived_bytes[28:40]
     return (key, iv_c, iv_s)
 
 def generate_key_pair(cipher_suite=CipherSuite.X25519_AESGCM128):
@@ -108,7 +108,7 @@ class PSSSTClient:
         packet = self._request_hdr.packet_bytes + exchange_dh
         cipher = AESGCM(key)
 
-        packet += cipher.encrypt(nonce_client, data, None)
+        packet += cipher.encrypt(nonce_client, data, packet[:4])
 
         def reply_handler(packet):
             """Unpack the reply to a request packet"""
@@ -121,7 +121,7 @@ class PSSSTClient:
                     packet[4:36] != exchange_dh):
                 raise PSSSTReplyMismatch()
             try:
-                plaintext = cipher.decrypt(nonce_server, packet[36:], None)
+                plaintext = cipher.decrypt(nonce_server, packet[36:], packet[:4])
             except InvalidTag:
                 raise PSSSTDecryptFailed()
             return plaintext
@@ -171,7 +171,7 @@ class PSSSTServer:
         cipher = AESGCM(key)
 
         try:
-            plaintext = cipher.decrypt(nonce_client, packet[36:], None)
+            plaintext = cipher.decrypt(nonce_client, packet[36:], packet[:4])
         except InvalidTag:
             raise PSSSTDecryptFailed()
 
@@ -190,6 +190,7 @@ class PSSSTServer:
             reply_hdr = Header(reply=True,
                                client_auth=hdr.client_auth,
                                cipher_suite=hdr.cipher_suite)
-            return reply_hdr.packet_bytes + packet[4:36] + cipher.encrypt(nonce_server, data, None)
+            header_bytes = reply_hdr.packet_bytes
+            return header_bytes + packet[4:36] + cipher.encrypt(nonce_server, data, header_bytes)
 
         return (plaintext, client_public_key, reply_handler)

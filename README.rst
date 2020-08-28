@@ -1,6 +1,9 @@
 PSSST: Packet Security for Stateless Server Transactions
 ========================================================
 
+.. note::
+    Complete API documentation can be found at ReadTheDocs_.
+
 This module implements the PSSST protocol and provides a very simple interface for client and server endpoints.
 PSSST is designed to provide a light weight way for clients to securely communicate with servers.
 
@@ -33,3 +36,4 @@ encrypted packet. Thus a minimal example of a transaction is as follows:
     reply_packet = server_reply_handler(received_request)
     received_reply = client_reply_handler(reply_packet)
    
+.. _ReadTheDocs: https://pssst.readthedocs.io/en/latest/

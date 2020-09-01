@@ -18,7 +18,8 @@ from .errors import (
     PSSSTDecryptFailed
     )
 
-def _DKF_SHA384(dh_param, shared_secret): # pylint: disable=invalid-name
+
+def _DKF_SHA384(dh_param, shared_secret):  # pylint: disable=invalid-name
     h384 = hashes.Hash(hashes.SHA384(), default_backend())
     h384.update(dh_param)
     h384.update(shared_secret)
@@ -27,6 +28,7 @@ def _DKF_SHA384(dh_param, shared_secret): # pylint: disable=invalid-name
     iv_c = derived_bytes[16:28]
     iv_s = derived_bytes[28:40]
     return (key, iv_c, iv_s)
+
 
 def generate_key_pair(cipher_suite=CipherSuite.X25519_AESGCM128):
     """A utility function to generate a suitable key pair for the given cipher suite
@@ -122,11 +124,12 @@ class PSSSTClient:
                 raise PSSSTReplyMismatch()
             try:
                 plaintext = cipher.decrypt(nonce_server, packet[36:], packet[:4])
-            except InvalidTag:
-                raise PSSSTDecryptFailed()
+            except InvalidTag as err:
+                raise PSSSTDecryptFailed() from err
             return plaintext
 
         return (packet, reply_handler)
+
 
 class PSSSTServer:
     """PSSST server interface
@@ -145,6 +148,7 @@ class PSSSTServer:
         self._server_private = server_private_key
 
     def unpack_request(self, packet):
+        # pylint: disable=too-many-locals
         """Unpack an incoming request
 
         :param packet: Incoming packet to unpack
@@ -172,8 +176,8 @@ class PSSSTServer:
 
         try:
             plaintext = cipher.decrypt(nonce_client, packet[36:], packet[:4])
-        except InvalidTag:
-            raise PSSSTDecryptFailed()
+        except InvalidTag as err:
+            raise PSSSTDecryptFailed() from err
 
         if hdr.client_auth:
             client_public_key = X25519PublicKey.from_public_bytes(plaintext[:32])

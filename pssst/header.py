@@ -5,15 +5,19 @@ Packet header abstraction and details
 from enum import Enum, IntFlag
 import struct
 
+from .errors import PSSSTUnsupportedCipher
+
 class HeaderFlag(IntFlag):
     """Flags as used in PSSST packet headers"""
     REPLY = (1 << 15)
     CLIENT_AUTH = (1 << 14)
 
+
 class CipherSuite(Enum):
     """Identifiers for known cipher suites"""
     NONE = 0
     X25519_AESGCM128 = 1
+
 
 class Header:
     """PSSST packet header definition"""
@@ -36,13 +40,16 @@ class Header:
         hdr = cls()
         flags, suite = struct.unpack(">HH", packet)
         hdr._flags = flags
-        hdr._suite = CipherSuite(suite)
+        try:
+            hdr._suite = CipherSuite(suite)
+        except ValueError as err:
+            raise PSSSTUnsupportedCipher() from err
         return hdr
 
     @property
     def reply(self):
         """True if the packet is a reply"""
-        return (self._flags & HeaderFlag.REPLY) != 0
+        return bool(self._flags & HeaderFlag.REPLY)
 
     @reply.setter
     def reply(self, is_reply):
@@ -50,10 +57,11 @@ class Header:
             self._flags |= HeaderFlag.REPLY
         else:
             self._flags &= ~HeaderFlag.REPLY
+
     @property
     def client_auth(self):
         """True if client authentication is used"""
-        return (self._flags & HeaderFlag.CLIENT_AUTH) != 0
+        return bool(self._flags & HeaderFlag.CLIENT_AUTH)
 
     @client_auth.setter
     def client_auth(self, has_client_auth):

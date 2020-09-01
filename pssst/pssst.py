@@ -24,14 +24,14 @@ from .errors import (
     )
 
 
-def _DKF_SHA384(dh_param, shared_secret):  # pylint: disable=invalid-name
-    h384 = hashes.Hash(hashes.SHA384(), default_backend())
-    h384.update(dh_param)
-    h384.update(shared_secret)
-    derived_bytes = h384.finalize()
+def _DKF_SHA256(dh_param, shared_secret):  # pylint: disable=invalid-name
+    h256 = hashes.Hash(hashes.SHA256(), default_backend())
+    h256.update(dh_param)
+    h256.update(shared_secret)
+    derived_bytes = h256.finalize()
     key = derived_bytes[:16]
-    iv_c = derived_bytes[16:28]
-    iv_s = derived_bytes[28:40]
+    iv_c = derived_bytes[16:24] + b"RQST"
+    iv_s = derived_bytes[24:32] + b"RPLY"
     return (key, iv_c, iv_s)
 
 
@@ -115,7 +115,7 @@ class PSSSTClient:
                                                                   format=PublicFormat.Raw)
             shared_secret = temp_priv_key.exchange(self._server_public)
 
-        key, nonce_client, nonce_server = _DKF_SHA384(exchange_dh, shared_secret)
+        key, nonce_client, nonce_server = _DKF_SHA256(exchange_dh, shared_secret)
 
         packet = self._request_hdr.packet_bytes + exchange_dh
         cipher = AESGCM(key)
@@ -180,7 +180,7 @@ class PSSSTServer:
         exchange_dh = X25519PublicKey.from_public_bytes(dh_bytes)
         shared_secret = self._server_private.exchange(exchange_dh)
 
-        key, nonce_client, nonce_server = _DKF_SHA384(dh_bytes, shared_secret)
+        key, nonce_client, nonce_server = _DKF_SHA256(dh_bytes, shared_secret)
 
         cipher = AESGCM(key)
 

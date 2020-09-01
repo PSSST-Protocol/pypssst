@@ -39,7 +39,7 @@ def test_fake_client_auth():
     
     data = client_pub_bytes + temp_private_bytes + test_message
     
-    key, nonce_client, nonce_server = pssst.pssst._DKF_SHA384(exchange_dh, shared_secret)
+    key, nonce_client, nonce_server = pssst.pssst._DKF_SHA256(exchange_dh, shared_secret)
 
     # Test 1: make sure that our dummy code works
     

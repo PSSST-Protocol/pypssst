@@ -1,3 +1,8 @@
+# This file is part of the PSSST Python module
+# Copyright 2020 Nicko van Someren
+# SPDX-License-Identifier: MIT
+# See the LICENSE.md file for full license terms
+
 """
 Packet Security for Stateless Server Tranactions
 """

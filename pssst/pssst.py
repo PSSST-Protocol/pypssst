@@ -1,3 +1,8 @@
+# This file is part of the PSSST Python module
+# Copyright 2020 Nicko van Someren
+# SPDX-License-Identifier: MIT
+# See the LICENSE.md file for full license terms
+
 """
 PSSST client and server interfaces
 """
@@ -46,6 +51,19 @@ def generate_key_pair(cipher_suite=CipherSuite.X25519_AESGCM128):
     return (new_private_key, new_private_key.public_key())
 
 
+def _key_check(key_value, public):
+    if key_value is None:
+        return None
+    if isinstance(key_value, str):
+        key_value = bytes.fromhex(key_value)
+    if isinstance(key_value, bytes):
+        if public:
+            key_value = X25519PublicKey.from_public_bytes(key_value)
+        else:
+            key_value = X25519PrivateKey.from_private_bytes(key_value)
+    return key_value
+
+
 class PSSSTClient:
     """PSSST client interface
 
@@ -63,23 +81,15 @@ class PSSSTClient:
         if cipher_suite != CipherSuite.X25519_AESGCM128:
             raise PSSSTUnsupportedCipher()
 
-        if isinstance(server_public_key, str):
-            server_public_key = X25519PublicKey.from_public_bytes(
-                bytes.fromhex(server_public_key)
-                )
         self._request_hdr = Header(cipher_suite=cipher_suite,
                                    reply=False,
                                    client_auth=(client_private_key is not None))
 
-        self._server_public = server_public_key
-        self._client_private = client_private_key
+        self._server_public = _key_check(server_public_key, True)
+        self._client_private = _key_check(client_private_key, False)
         if client_private_key is not None:
-            if isinstance(client_private_key, str):
-                client_private_key = X25519PrivateKey.from_private_bytes(
-                    bytes.fromhex(client_private_key)
-                    )
-            self._client_public = client_private_key.public_key()
-            partial_key_bytes = client_private_key.exchange(server_public_key)
+            self._client_public = self._client_private.public_key()
+            partial_key_bytes = self._client_private.exchange(self._server_public)
             self._client_server_pub = X25519PublicKey.from_public_bytes(partial_key_bytes)
 
     def pack_request(self, data):
@@ -145,7 +155,7 @@ class PSSSTServer:
         if cipher_suite != CipherSuite.X25519_AESGCM128:
             raise PSSSTUnsupportedCipher()
         self._suite = cipher_suite
-        self._server_private = server_private_key
+        self._server_private = _key_check(server_private_key, False)
 
     def unpack_request(self, packet):
         # pylint: disable=too-many-locals

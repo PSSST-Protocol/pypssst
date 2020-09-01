@@ -27,7 +27,8 @@ Key features of PSSST are:
 
    Introduction <introduction>
    API details <API>
-
+   Contributing <contributing>
+   License <license>
 
                   
 Indices and tables

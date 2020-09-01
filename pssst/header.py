@@ -1,3 +1,8 @@
+# This file is part of the PSSST Python module
+# Copyright 2020 Nicko van Someren
+# SPDX-License-Identifier: MIT
+# See the LICENSE.md file for full license terms
+
 """
 Packet header abstraction and details
 """
@@ -6,6 +11,7 @@ from enum import Enum, IntFlag
 import struct
 
 from .errors import PSSSTUnsupportedCipher
+
 
 class HeaderFlag(IntFlag):
     """Flags as used in PSSST packet headers"""

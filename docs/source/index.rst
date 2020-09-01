@@ -29,6 +29,7 @@ Key features of PSSST are:
    API details <API>
    Contributing <contributing>
    License <license>
+   Change log <changelog>
 
                   
 Indices and tables

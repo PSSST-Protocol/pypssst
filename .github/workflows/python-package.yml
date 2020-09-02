@@ -28,6 +28,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         if [ -f requirements_test.txt ]; then pip install -r requirements_test.txt; fi
-    - name: Test with tox
+    - name: Check code for style
       run: |
-        tox
+        pylint pssst
+        flake8 pssst
+    - name: Run tests and coverage analysis
+      run: |
+        coverage run -m pytest
+        coverage report --fail-under 100 --include 'pssst/*'

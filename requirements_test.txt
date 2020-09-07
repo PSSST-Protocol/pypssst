@@ -3,3 +3,4 @@ pytest
 coverage
 pylint
 flake8
+click

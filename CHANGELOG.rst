@@ -1,6 +1,15 @@
 Python PSSST Change History
 ===========================
 
+Version 0.2.1
+-------------
+
+The reply handlers returned when packing and unpacking requests have
+been refactored to prevent them being used more than once. The default
+cipher suite uses AES in GCM mode, as a result sending more than once
+reply packet (which would use the same key and nonce) would be a
+security risk and so raises an error.
+
 Version 0.2.0
 -------------
 

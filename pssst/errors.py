@@ -34,3 +34,7 @@ class PSSSTNotRequest(PSSSTException):
 
 class PSSSTDecryptFailed(PSSSTException):
     """Authenticated decryption failed"""
+
+
+class PSSSTHandlerReused(PSSSTException):
+    """Reply handlers can not be reused"""

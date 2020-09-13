@@ -12,7 +12,7 @@ from .pssst import PSSSTClient, PSSSTServer, generate_key_pair
 from .errors import (
     PSSSTException, PSSSTUnsupportedCipher, PSSSTClientAuthFailed,
     PSSSTReplyMismatch, PSSSTNotReply, PSSSTNotRequest,
-    PSSSTDecryptFailed
+    PSSSTDecryptFailed, PSSSTHandlerReused
     )
 
 __version__ = "0.2.0"
@@ -23,5 +23,5 @@ __all__ = [
     "Header", "CipherSuite", "HeaderFlag",
     "PSSSTException", "PSSSTUnsupportedCipher", "PSSSTClientAuthFailed",
     "PSSSTReplyMismatch", "PSSSTNotReply", "PSSSTNotRequest",
-    "PSSSTDecryptFailed"
+    "PSSSTDecryptFailed", "PSSSTHandlerReused"
 ]

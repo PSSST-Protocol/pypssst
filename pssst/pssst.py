@@ -20,7 +20,7 @@ from .header import Header, CipherSuite
 from .errors import (
     PSSSTUnsupportedCipher, PSSSTClientAuthFailed,
     PSSSTReplyMismatch, PSSSTNotReply, PSSSTNotRequest,
-    PSSSTDecryptFailed
+    PSSSTDecryptFailed, PSSSTHandlerReused
     )
 
 
@@ -62,6 +62,38 @@ def _key_check(key_value, public):
         else:
             key_value = X25519PrivateKey.from_private_bytes(key_value)
     return key_value
+
+
+class _ReplyHandler:
+    # pylint: disable=too-few-public-methods,too-many-arguments
+    def __init__(self, dh_param, client_auth, cipher_suite, cipher, server_nonce):
+        self._header = Header(reply=True,
+                              client_auth=client_auth,
+                              cipher_suite=cipher_suite)
+        self._dh = dh_param
+        self._cipher = cipher
+        self._nonce = server_nonce
+
+
+class _ClientReplyHandler(_ReplyHandler):
+    # pylint: disable=too-few-public-methods
+    def __call__(self, data):
+        """Unpack the reply to a request packet"""
+        if self._cipher is None:
+            raise PSSSTHandlerReused()
+        hdr = Header.from_packet(data[:4])
+        if not hdr.reply:
+            raise PSSSTNotReply()
+        if (hdr.cipher_suite != self._header.cipher_suite or
+                hdr.client_auth != self._header.client_auth or
+                data[4:36] != self._dh):
+            raise PSSSTReplyMismatch()
+        try:
+            plaintext = self._cipher.decrypt(self._nonce, data[36:], self._header.packet_bytes)
+        except InvalidTag as err:
+            raise PSSSTDecryptFailed() from err
+        self._cipher = None
+        return plaintext
 
 
 class PSSSTClient:
@@ -122,23 +154,23 @@ class PSSSTClient:
 
         packet += cipher.encrypt(nonce_client, data, packet[:4])
 
-        def reply_handler(packet):
-            """Unpack the reply to a request packet"""
-            hdr = Header.from_packet(packet[:4])
-            if not hdr.reply:
-                raise PSSSTNotReply()
-            if (not hdr.reply or
-                    hdr.cipher_suite != self._request_hdr.cipher_suite or
-                    hdr.client_auth != self._request_hdr.client_auth or
-                    packet[4:36] != exchange_dh):
-                raise PSSSTReplyMismatch()
-            try:
-                plaintext = cipher.decrypt(nonce_server, packet[36:], packet[:4])
-            except InvalidTag as err:
-                raise PSSSTDecryptFailed() from err
-            return plaintext
+        reply_handler = _ClientReplyHandler(exchange_dh,
+                                            self._request_hdr.client_auth,
+                                            self._request_hdr.cipher_suite,
+                                            cipher, nonce_server)
 
         return (packet, reply_handler)
+
+
+class _ServerReplyHandler(_ReplyHandler):
+    # pylint: disable=too-few-public-methods
+    def __call__(self, data):
+        if self._cipher is None:
+            raise PSSSTHandlerReused()
+        header_bytes = self._header.packet_bytes
+        ciphertext = self._cipher.encrypt(self._nonce, data, header_bytes)
+        self._cipher = None
+        return header_bytes + self._dh + ciphertext
 
 
 class PSSSTServer:
@@ -199,12 +231,8 @@ class PSSSTServer:
         else:
             client_public_key = None
 
-        def reply_handler(data):
-            """Pack a reply to the request"""
-            reply_hdr = Header(reply=True,
-                               client_auth=hdr.client_auth,
-                               cipher_suite=hdr.cipher_suite)
-            header_bytes = reply_hdr.packet_bytes
-            return header_bytes + packet[4:36] + cipher.encrypt(nonce_server, data, header_bytes)
+        reply_handler = _ServerReplyHandler(packet[4:36],
+                                            hdr.client_auth, hdr.cipher_suite,
+                                            cipher, nonce_server)
 
         return (plaintext, client_public_key, reply_handler)
